@@ -1,0 +1,202 @@
+You are a senior full-stack engineer and UI/UX expert.
+
+Build a COMPLETE production-level web application called:
+
+"LevelUp – Gamified Self-Improvement Dashboard"
+
+This is NOT a simple todo app. It must feel like a game (inspired by Solo Leveling + RPG systems).
+
+-----------------------------------
+
+## ⚔️ CORE CONCEPT
+
+Users are characters.
+Completing real-life tasks = gaining XP, leveling up, improving stats.
+
+The app must feel addictive, immersive, and visually satisfying.
+
+-----------------------------------
+
+## 🧱 TECH STACK (MANDATORY)
+
+Frontend:
+- React (with Vite)
+- Tailwind CSS
+- Framer Motion (for animations)
+
+Backend:
+- Node.js + Express
+- MongoDB (Mongoose)
+
+Auth:
+- JWT Authentication
+
+-----------------------------------
+
+## 🧩 CORE FEATURES (IMPLEMENT ALL)
+
+### 1. USER SYSTEM
+- Signup/Login (JWT based)
+- User profile:
+  - username
+  - level
+  - XP
+  - streak
+  - stats:
+    - strength
+    - intelligence
+    - discipline
+    - health
+
+-----------------------------------
+
+### 2. DASHBOARD UI
+
+Create a modern DARK THEME UI with:
+- glowing XP bar
+- animated level indicator
+- user stats cards
+- daily quests list
+
+Sections:
+1. Top:
+   - Avatar
+   - Level + XP progress bar (animated)
+2. Middle:
+   - Stats (4 categories with icons)
+3. Bottom:
+   - Daily quests
+
+-----------------------------------
+
+### 3. QUEST SYSTEM
+
+Users can:
+- Create tasks (quests)
+- Mark as complete
+
+Each quest has:
+- title
+- difficulty (easy/medium/hard)
+- XP reward
+
+Logic:
+- Completing quest → add XP
+- Update stats based on category
+
+-----------------------------------
+
+### 4. LEVELING SYSTEM
+
+- XP increases level
+- Formula:
+  XP needed = 100 * level
+
+- On level up:
+  - show FULL SCREEN animation:
+    "LEVEL UP!"
+
+-----------------------------------
+
+### 5. STREAK SYSTEM
+
+- Daily completion tracking
+- If user completes at least 1 task → streak++
+- If missed → streak resets
+
+-----------------------------------
+
+### 6. ANIMATIONS (VERY IMPORTANT)
+
+Use Framer Motion for:
+- XP gain floating animation (+50 XP)
+- Level up screen flash
+- Smooth transitions
+
+-----------------------------------
+
+### 7. BACKEND API
+
+Create REST APIs:
+
+Auth:
+- POST /register
+- POST /login
+
+User:
+- GET /profile
+
+Quests:
+- GET /quests
+- POST /quests
+- PUT /quests/:id (mark complete)
+
+Game logic:
+- XP calculation
+- Level update
+- Streak update
+
+-----------------------------------
+
+### 8. DATABASE SCHEMA
+
+User Schema:
+- username
+- email
+- password
+- level
+- xp
+- streak
+- stats (object)
+
+Quest Schema:
+- userId
+- title
+- difficulty
+- xpReward
+- completed
+- createdAt
+
+-----------------------------------
+
+### 9. UI DESIGN STYLE
+
+- Dark theme (black + neon blue/purple)
+- Glassmorphism cards
+- Glow effects
+- Smooth hover animations
+
+-----------------------------------
+
+### 10. BONUS (IF POSSIBLE)
+
+- Skill tree UI (basic version)
+- Weekly analytics chart
+- Mobile responsive design
+
+-----------------------------------
+
+## ⚠️ IMPORTANT RULES
+
+- Write CLEAN, modular code
+- Use reusable components
+- Separate frontend and backend folders
+- Include comments
+- Ensure project is runnable
+
+-----------------------------------
+
+## 🎯 OUTPUT FORMAT
+
+1. Folder structure
+2. Backend code (Express + MongoDB)
+3. Frontend code (React components)
+4. Instructions to run locally
+
+-----------------------------------
+
+Build this step-by-step, starting with backend, then frontend.
+
+Do NOT skip features.
+Do NOT simplify the design.
+Make it visually impressive and production-ready.

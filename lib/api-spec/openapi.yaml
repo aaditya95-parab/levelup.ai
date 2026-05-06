@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: LevelUp Gamified Self-Improvement Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User profile operations
+  - name: quests
+    description: Quest management operations
+  - name: stats
+    description: Analytics and stats operations
 paths:
   /healthz:
     get:
@@ -24,7 +32,228 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/profile:
+    get:
+      operationId: getProfile
+      tags: [users]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /quests:
+    get:
+      operationId: getQuests
+      tags: [quests]
+      summary: Get all quests for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: completed
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of quests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quest"
+    post:
+      operationId: createQuest
+      tags: [quests]
+      summary: Create a new quest
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuestBody"
+      responses:
+        "201":
+          description: Quest created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quest"
+
+  /quests/{questId}:
+    put:
+      operationId: updateQuest
+      tags: [quests]
+      summary: Update quest (complete it or edit fields)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuestBody"
+      responses:
+        "200":
+          description: Quest updated and XP result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestCompleteResponse"
+    delete:
+      operationId: deleteQuest
+      tags: [quests]
+      summary: Delete a quest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quest deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [stats]
+      summary: Get user stats summary including XP to next level, streak info, and quest completion
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
+  /stats/weekly:
+    get:
+      operationId: getWeeklyStats
+      tags: [stats]
+      summary: Get weekly XP and quest completion data for chart
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Weekly stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyStats"
+
+  /stats/leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [stats]
+      summary: Get top players by level and XP
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +263,282 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    RegisterBody:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+      required:
+        - username
+        - email
+        - password
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - token
+        - user
+
+    UserStats:
+      type: object
+      properties:
+        strength:
+          type: integer
+          minimum: 0
+        intelligence:
+          type: integer
+          minimum: 0
+        discipline:
+          type: integer
+          minimum: 0
+        health:
+          type: integer
+          minimum: 0
+      required:
+        - strength
+        - intelligence
+        - discipline
+        - health
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        level:
+          type: integer
+        xp:
+          type: integer
+        xpToNextLevel:
+          type: integer
+        streak:
+          type: integer
+        stats:
+          $ref: "#/components/schemas/UserStats"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - username
+        - email
+        - level
+        - xp
+        - xpToNextLevel
+        - streak
+        - stats
+        - createdAt
+
+    Quest:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        category:
+          type: string
+          enum: [strength, intelligence, discipline, health]
+        xpReward:
+          type: integer
+        completed:
+          type: boolean
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - title
+        - difficulty
+        - category
+        - xpReward
+        - completed
+        - createdAt
+
+    CreateQuestBody:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 500
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        category:
+          type: string
+          enum: [strength, intelligence, discipline, health]
+      required:
+        - title
+        - difficulty
+        - category
+
+    UpdateQuestBody:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        category:
+          type: string
+          enum: [strength, intelligence, discipline, health]
+
+    QuestCompleteResponse:
+      type: object
+      properties:
+        quest:
+          $ref: "#/components/schemas/Quest"
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        xpGained:
+          type: integer
+        leveledUp:
+          type: boolean
+        newLevel:
+          type: integer
+          nullable: true
+        streakUpdated:
+          type: boolean
+      required:
+        - quest
+        - user
+        - xpGained
+        - leveledUp
+        - streakUpdated
+
+    StatsSummary:
+      type: object
+      properties:
+        totalQuestsCompleted:
+          type: integer
+        totalQuestsPending:
+          type: integer
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        xpToNextLevel:
+          type: integer
+        xpProgress:
+          type: number
+          description: 0-100 percentage to next level
+        totalXpEarned:
+          type: integer
+        questsCompletedToday:
+          type: integer
+      required:
+        - totalQuestsCompleted
+        - totalQuestsPending
+        - currentStreak
+        - longestStreak
+        - xpToNextLevel
+        - xpProgress
+        - totalXpEarned
+        - questsCompletedToday
+
+    DailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+        xpEarned:
+          type: integer
+        questsCompleted:
+          type: integer
+        dayLabel:
+          type: string
+      required:
+        - date
+        - xpEarned
+        - questsCompleted
+        - dayLabel
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        username:
+          type: string
+        level:
+          type: integer
+        xp:
+          type: integer
+        streak:
+          type: integer
+      required:
+        - rank
+        - username
+        - level
+        - xp
+        - streak

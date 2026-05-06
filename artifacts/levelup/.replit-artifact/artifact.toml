@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "LevelUp Dashboard"
+version = "1.0.0"
+id = "artifacts/levelup"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20769
+
+[services.development]
+run = "pnpm --filter @workspace/levelup run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/levelup", "run", "build" ]
+publicDir = "artifacts/levelup/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20769"
+BASE_PATH = "/"
