@@ -5,6 +5,7 @@ import { useGetProfile, useGetStatsSummary } from "../lib/api-client-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getRank } from "../lib/ranks";
+import { ActiveQuestHeader } from "./ActiveQuestHeader";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -16,6 +17,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("levelup_token");
+    localStorage.removeItem("active-quest-v1");
+    localStorage.removeItem("quest-runtime-v1");
     setLocation("/login");
   };
 
@@ -149,6 +152,8 @@ export function Layout({ children }: { children: ReactNode }) {
           </motion.aside>
         )}
       </AnimatePresence>
+
+      <ActiveQuestHeader />
 
       <main className="flex-1 overflow-auto relative pt-16 md:pt-0">
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none z-0" />

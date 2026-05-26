@@ -39,6 +39,7 @@ function toQuestResponse(quest: QuestDocument) {
     difficulty: quest.difficulty,
     category: quest.category,
     xpReward: quest.xpReward,
+    status: quest.status,
     completed: quest.completed,
     completedAt: quest.completedAt ?? null,
     createdAt: quest.createdAt,
@@ -62,10 +63,31 @@ function toUserProfile(user: UserDocument) {
 router.get("/quests", requireAuth, async (req: AuthenticatedRequest, res) => {
   const parsed = GetQuestsQueryParams.safeParse(req.query);
   const completedFilter = parsed.success ? parsed.data.completed : undefined;
+  const statusFilter = parsed.success ? parsed.data.status : undefined;
 
   try {
+    // ── FALLBACK MIGRATION LOGIC FOR LEGACY QUESTS ──
+    // 1. User ownership consistency: tie old quests to this authenticated user
+    await Quest.updateMany(
+      { $or: [{ userId: { $exists: false } }, { userId: null }] },
+      { $set: { userId: req.userId! } }
+    );
+    // 2. Status migration: derive from completed boolean
+    await Quest.updateMany(
+      { status: { $exists: false }, completed: true },
+      { $set: { status: "completed" } }
+    );
+    await Quest.updateMany(
+      { status: { $exists: false }, completed: false },
+      { $set: { status: "available" } }
+    );
+
     const filter: Record<string, unknown> = { userId: req.userId! };
-    if (completedFilter !== undefined) {
+
+    // Status filter takes priority over completed filter
+    if (statusFilter !== undefined) {
+      filter.status = statusFilter;
+    } else if (completedFilter !== undefined) {
       filter.completed = completedFilter;
     }
 
@@ -98,6 +120,7 @@ router.post("/quests", requireAuth, async (req: AuthenticatedRequest, res) => {
       difficulty,
       category,
       xpReward,
+      status: "available",
       completed: false,
       completedAt: null,
     });
@@ -123,7 +146,7 @@ router.put("/quests/:questId", requireAuth, async (req: AuthenticatedRequest, re
   }
 
   const { questId } = paramsParsed.data;
-  const { completed, title, description, difficulty, category } = bodyParsed.data;
+  const { completed, status, title, description, difficulty, category } = bodyParsed.data;
 
   try {
     const existing = await Quest.findOne({ id: questId, userId: req.userId! }).lean();
@@ -142,14 +165,30 @@ router.put("/quests/:questId", requireAuth, async (req: AuthenticatedRequest, re
     }
     if (category !== undefined) updateValues.category = category;
 
+    // Handle status changes (e.g., accepting a quest)
+    if (status !== undefined) {
+      updateValues.status = status as any;
+      // If setting to completed via status field, also set completed boolean
+      if (status === "completed" && !existing.completed) {
+        updateValues.completed = true;
+        updateValues.completedAt = new Date();
+      }
+      // If reverting from completed, reset completed boolean
+      if (status !== "completed" && existing.completed) {
+        updateValues.completed = false;
+        updateValues.completedAt = null;
+      }
+    }
+
     let xpGained = 0;
     let leveledUp = false;
     let newLevel: number | null = null;
     let streakUpdated = false;
 
-    if (completed === true && !existing.completed) {
+    if ((completed === true || status === "completed") && !existing.completed) {
       updateValues.completed = true;
       updateValues.completedAt = new Date();
+      updateValues.status = "completed";
       xpGained = existing.xpReward;
 
       // Update user stats
@@ -214,9 +253,10 @@ router.put("/quests/:questId", requireAuth, async (req: AuthenticatedRequest, re
         }
         streakUpdated = didStreakUpdate;
       }
-    } else if (completed === false && existing.completed) {
+    } else if ((completed === false || status === "available") && existing.completed) {
       updateValues.completed = false;
       updateValues.completedAt = null;
+      updateValues.status = "available";
     }
 
     const updatedQuest = await Quest.findOneAndUpdate(

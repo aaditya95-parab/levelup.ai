@@ -13,6 +13,7 @@ import Onboarding from "@/pages/onboarding";
 import { useEffect, useState } from "react";
 import { Layout } from "@/components/layout";
 import { LevelUpProvider } from "@/components/level-up-context";
+import { ActiveQuestProvider } from "@/components/ActiveQuestContext";
 import { customFetch } from "./lib/api-client-react/custom-fetch";
 
 const queryClient = new QueryClient({
@@ -129,9 +130,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <LevelUpProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
+          <ActiveQuestProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+          </ActiveQuestProvider>
         </LevelUpProvider>
         <Toaster />
       </TooltipProvider>

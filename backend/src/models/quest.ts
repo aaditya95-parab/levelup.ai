@@ -19,6 +19,13 @@ const questSchema = new Schema(
       default: "discipline",
     },
     xpReward: { type: Number, required: true, default: 50 },
+    status: {
+      type: String,
+      enum: ["available", "active", "completed", "failed"],
+      required: true,
+      default: "available",
+      index: true,
+    },
     completed: { type: Boolean, required: true, default: false },
     completedAt: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now },

@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Plus, Check, X } from "lucide-react";
 import { useLevelUp } from "@/components/level-up-context";
+import { useActiveQuest } from "@/components/ActiveQuestContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +14,7 @@ import { QuestTimer } from "@/components/QuestTimer";
 import { QuestAcceptButton } from "@/components/QuestAcceptButton";
 import { RetryQuestPopup } from "@/components/RetryQuestPopup";
 import { QuestStatusBadge } from "@/components/QuestStatusBadge";
+import { getQuestBriefing, getMinimumMinutes, getRecommendedMinutes, type QuestCategory, type QuestDifficulty } from "@/lib/quest-briefing";
 
 const questSchema = z.object({
   title: z.string().min(1).max(200),
@@ -25,9 +27,10 @@ type Quest = {
   id: number;
   title: string;
   description?: string | null;
-  difficulty: "easy" | "medium" | "hard";
-  category: "strength" | "intelligence" | "discipline" | "health";
+  difficulty: QuestDifficulty;
+  category: QuestCategory;
   xpReward: number;
+  status?: string;
   completed: boolean;
 };
 
@@ -38,13 +41,7 @@ type QuestRuntime = {
   sincerityScore: number;
 };
 
-type QuestBriefing = {
-  description: string;
-  steps: string[];
-  tips: string[];
-  recommendedMinutes: number;
-  minMinutes: number;
-};
+type QuestStatus = "available" | "active" | "completed" | "failed";
 
 type RetryPrompt = {
   quest: Quest;
@@ -61,82 +58,6 @@ const difficultyOrder = {
   medium: 2,
   hard: 3,
 } as const;
-
-const recommendedMinutesByDifficulty = {
-  easy: 15,
-  medium: 30,
-  hard: 60,
-} as const;
-
-const minCompletionRatioByDifficulty = {
-  easy: 0.4,
-  medium: 0.5,
-  hard: 0.6,
-} as const;
-
-const categoryBriefing = {
-  strength: {
-    steps: [
-      "Warm up 3-5 minutes to prepare your body.",
-      "Complete the main set with strict form.",
-      "Record reps, sets, or distance.",
-      "Cool down and stretch the target muscles.",
-    ],
-    tips: [
-      "Focus on controlled tempo and breath.",
-      "Track small performance gains.",
-      "Stop if form breaks down.",
-    ],
-  },
-  intelligence: {
-    steps: [
-      "Define the objective and clear distractions.",
-      "Work in 2-3 focused study blocks.",
-      "Summarize key insights in your own words.",
-      "Log the result and next action.",
-    ],
-    tips: [
-      "Use a timer and single-task focus.",
-      "Capture notes immediately after each block.",
-      "End with a quick review.",
-    ],
-  },
-  discipline: {
-    steps: [
-      "Set a clear start and end time.",
-      "Execute the task without task-switching.",
-      "Mark completion in your tracker.",
-      "Review what slowed you down.",
-    ],
-    tips: [
-      "Reduce friction before starting.",
-      "Keep your environment minimal.",
-      "Commit to the first 5 minutes.",
-    ],
-  },
-  health: {
-    steps: [
-      "Prepare a calm, clear space.",
-      "Follow the routine mindfully and safely.",
-      "Hydrate and note how you feel afterward.",
-      "Log completion and any symptoms.",
-    ],
-    tips: [
-      "Prioritize form and consistency.",
-      "Use steady breathing as a pacing tool.",
-      "Avoid rushing the final minutes.",
-    ],
-  },
-} as const;
-
-function getRecommendedMinutes(difficulty: Quest["difficulty"]): number {
-  return recommendedMinutesByDifficulty[difficulty];
-}
-
-function getMinimumMinutes(difficulty: Quest["difficulty"], recommendedMinutes: number): number {
-  const ratio = minCompletionRatioByDifficulty[difficulty];
-  return Math.max(3, Math.ceil(recommendedMinutes * ratio));
-}
 
 function getElapsedMinutes(acceptedAt: string): number {
   const elapsedMs = Date.now() - new Date(acceptedAt).getTime();
@@ -156,24 +77,9 @@ function loadQuestRuntime(): Record<string, QuestRuntime> {
   }
 }
 
-function getQuestBriefing(quest: Quest): QuestBriefing {
-  const briefing = categoryBriefing[quest.category];
-  const description = quest.description?.trim()
-    ? quest.description
-    : "Complete the objective with focus, accuracy, and full intent.";
-  const recommendedMinutes = getRecommendedMinutes(quest.difficulty);
-  const minMinutes = getMinimumMinutes(quest.difficulty, recommendedMinutes);
-  return {
-    description,
-    steps: Array.from(briefing.steps),
-    tips: Array.from(briefing.tips),
-    recommendedMinutes,
-    minMinutes,
-  };
-}
 
 export default function Quests() {
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("active");
+  const [filter, setFilter] = useState<"all" | QuestStatus>("active");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
   const [retryPrompt, setRetryPrompt] = useState<RetryPrompt | null>(null);
@@ -181,10 +87,13 @@ export default function Quests() {
   
   const queryClient = useQueryClient();
   const { triggerLevelUp, triggerXPGain } = useLevelUp();
+  const { activeQuest, setActiveQuest, clearActiveQuest } = useActiveQuest();
+
+  const statusFilter = filter === "all" ? undefined : filter;
 
   const { data: quests, isLoading } = useGetQuests(
-    filter === "all" ? undefined : { completed: filter === "completed" },
-    { query: { queryKey: ["/api/quests", filter === "all" ? undefined : { completed: filter === "completed" }] } }
+    statusFilter === undefined ? undefined : { status: statusFilter },
+    { query: { queryKey: ["/api/quests", statusFilter === undefined ? undefined : { status: statusFilter }] } }
   );
 
   const createQuest = useCreateQuest();
@@ -215,20 +124,62 @@ export default function Quests() {
 
   useEffect(() => {
     if (!quests) return;
-    const questIds = new Set(quests.map((quest) => String(quest.id)));
-    setQuestRuntime((prev) => {
-      let changed = false;
-      const next: Record<string, QuestRuntime> = {};
-      Object.entries(prev).forEach(([key, value]) => {
-        if (questIds.has(key)) {
-          next[key] = value;
-          return;
-        }
-        changed = true;
+    
+    // Only clear active quest if we see it in the list and it is no longer active or is completed
+    if (activeQuest) {
+      const match = quests.find((quest) => quest.id === activeQuest.id);
+      if (match && (match.completed || match.status !== "active")) {
+        clearActiveQuest();
+      }
+    }
+  }, [quests, activeQuest, clearActiveQuest]);
+
+  useEffect(() => {
+    if (!activeQuest) {
+      setQuestRuntime((prev) => {
+        let changed = false;
+        const next: Record<string, QuestRuntime> = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.acceptedAt) {
+            next[key] = { ...next[key], acceptedAt: null };
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
       });
+      return;
+    }
+
+    const activeKey = String(activeQuest.id);
+    setQuestRuntime((prev) => {
+      const next: Record<string, QuestRuntime> = { ...prev };
+      let changed = false;
+      Object.entries(next).forEach(([key, value]) => {
+        if (key !== activeKey && value.acceptedAt) {
+          next[key] = { ...value, acceptedAt: null };
+          changed = true;
+        }
+      });
+
+      const current = next[activeKey] ?? {
+        acceptedAt: null,
+        recommendedMinutes: activeQuest.recommendedMinutes,
+        forceCompleteCount: 0,
+        sincerityScore: 100,
+      };
+
+      if (current.acceptedAt !== activeQuest.acceptedAt || current.recommendedMinutes !== activeQuest.recommendedMinutes) {
+        next[activeKey] = {
+          ...current,
+          acceptedAt: activeQuest.acceptedAt,
+          recommendedMinutes: activeQuest.recommendedMinutes,
+        };
+        changed = true;
+      }
+
       return changed ? next : prev;
     });
-  }, [quests]);
+  }, [activeQuest]);
 
   const sortedQuests = useMemo(() => {
     if (!quests) return [];
@@ -242,22 +193,30 @@ export default function Quests() {
   const selectedQuest = selectedQuestId
     ? sortedQuests.find((quest) => quest.id === selectedQuestId) ?? null
     : null;
-  const selectedBriefing = selectedQuest ? getQuestBriefing(selectedQuest) : null;
+  const selectedBriefing = selectedQuest
+    ? getQuestBriefing({
+        description: selectedQuest.description,
+        difficulty: selectedQuest.difficulty,
+        category: selectedQuest.category,
+      })
+    : null;
   const selectedRuntime = selectedQuest ? questRuntime[String(selectedQuest.id)] : null;
   const selectedStatus = selectedQuest
-    ? selectedQuest.completed
-      ? "completed"
-      : selectedRuntime?.acceptedAt
-        ? "active"
-        : "available"
+    ? (selectedQuest.status || (selectedQuest.completed ? "completed" : "available")) as QuestStatus
     : "available";
+  const selectedAcceptedAt = activeQuest && selectedQuest && activeQuest.id === selectedQuest.id
+    ? activeQuest.acceptedAt
+    : null;
+  const selectedRecommendedMinutes = activeQuest && selectedQuest && activeQuest.id === selectedQuest.id
+    ? activeQuest.recommendedMinutes
+    : selectedRuntime?.recommendedMinutes ?? selectedBriefing?.recommendedMinutes ?? 0;
 
   const getRuntime = (quest: Quest): QuestRuntime => {
     const key = String(quest.id);
     const existing = questRuntime[key];
     if (!existing) {
       return {
-        acceptedAt: null,
+        acceptedAt: activeQuest?.id === quest.id ? activeQuest.acceptedAt : null,
         recommendedMinutes: getRecommendedMinutes(quest.difficulty),
         forceCompleteCount: 0,
         sincerityScore: 100,
@@ -265,6 +224,7 @@ export default function Quests() {
     }
     return {
       ...existing,
+      acceptedAt: activeQuest?.id === quest.id ? activeQuest.acceptedAt : existing.acceptedAt,
       recommendedMinutes: existing.recommendedMinutes || getRecommendedMinutes(quest.difficulty),
     };
   };
@@ -286,20 +246,58 @@ export default function Quests() {
 
   const handleAcceptQuest = (quest: Quest, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    updateRuntime(quest, (current) => ({
-      ...current,
-      acceptedAt: new Date().toISOString(),
-      recommendedMinutes: current.recommendedMinutes || getRecommendedMinutes(quest.difficulty),
-    }));
+
+    updateQuest.mutate({ questId: quest.id, data: { status: "active" } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/quests"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats/summary"] });
+      }
+    });
+
+    const acceptedAt = new Date().toISOString();
+    const recommendedMinutes = getRecommendedMinutes(quest.difficulty);
+    setActiveQuest({
+      id: quest.id,
+      title: quest.title,
+      description: quest.description ?? null,
+      category: quest.category,
+      difficulty: quest.difficulty,
+      xpReward: quest.xpReward,
+      acceptedAt,
+      recommendedMinutes,
+    });
+    setQuestRuntime((prev) => {
+      const next: Record<string, QuestRuntime> = { ...prev };
+      Object.entries(next).forEach(([key, value]) => {
+        if (key !== String(quest.id) && value.acceptedAt) {
+          next[key] = { ...value, acceptedAt: null };
+        }
+      });
+      const current = next[String(quest.id)] ?? {
+        acceptedAt: null,
+        recommendedMinutes,
+        forceCompleteCount: 0,
+        sincerityScore: 100,
+      };
+      next[String(quest.id)] = {
+        ...current,
+        acceptedAt,
+        recommendedMinutes,
+      };
+      return next;
+    });
   };
 
   const completeQuest = (quest: Quest, clickPoint: { x: number; y: number }) => {
-    updateQuest.mutate({ questId: quest.id, data: { completed: true } }, {
+    updateQuest.mutate({ questId: quest.id, data: { status: "completed", completed: true } }, {
       onSuccess: (res) => {
         const xpEvent = { clientX: clickPoint.x, clientY: clickPoint.y } as React.MouseEvent;
         triggerXPGain(res.xpGained, xpEvent);
         if (res.leveledUp && res.newLevel) {
           triggerLevelUp(res.newLevel);
+        }
+        if (activeQuest?.id === quest.id) {
+          clearActiveQuest();
         }
         updateRuntime(quest, (current) => ({
           ...current,
@@ -316,18 +314,21 @@ export default function Quests() {
   const handleAttemptComplete = (quest: Quest, e: React.MouseEvent) => {
     e.stopPropagation();
     const runtime = getRuntime(quest);
-    if (!runtime.acceptedAt) {
+    const isActive = activeQuest?.id === quest.id;
+    const acceptedAt = isActive ? activeQuest?.acceptedAt : runtime.acceptedAt;
+    if (!isActive || !acceptedAt) {
       setSelectedQuestId(quest.id);
       return;
     }
-    const elapsedMinutes = getElapsedMinutes(runtime.acceptedAt);
-    const minMinutes = getMinimumMinutes(quest.difficulty, runtime.recommendedMinutes);
+    const elapsedMinutes = getElapsedMinutes(acceptedAt);
+    const recommendedMinutes = activeQuest?.recommendedMinutes ?? runtime.recommendedMinutes;
+    const minMinutes = getMinimumMinutes(quest.difficulty, recommendedMinutes);
     if (elapsedMinutes < minMinutes) {
       setRetryPrompt({
         quest,
         elapsedMinutes,
         minMinutes,
-        recommendedMinutes: runtime.recommendedMinutes,
+        recommendedMinutes,
         clickPoint: { x: e.clientX, y: e.clientY },
       });
       return;
@@ -359,6 +360,9 @@ export default function Quests() {
     e?.stopPropagation();
     deleteQuest.mutate({ questId }, {
       onSuccess: () => {
+        if (activeQuest?.id === questId) {
+          clearActiveQuest();
+        }
         setQuestRuntime((prev) => {
           const next = { ...prev };
           delete next[String(questId)];
@@ -377,8 +381,8 @@ export default function Quests() {
         quest={selectedQuest}
         details={selectedBriefing}
         status={selectedStatus}
-        acceptedAt={selectedRuntime?.acceptedAt ?? null}
-        recommendedMinutes={selectedRuntime?.recommendedMinutes ?? selectedBriefing?.recommendedMinutes ?? 0}
+        acceptedAt={selectedAcceptedAt}
+        recommendedMinutes={selectedRecommendedMinutes}
         sincerityScore={selectedRuntime?.sincerityScore ?? 100}
         forceCompleteCount={selectedRuntime?.forceCompleteCount ?? 0}
         onAccept={() => selectedQuest && handleAcceptQuest(selectedQuest)}
@@ -482,9 +486,8 @@ export default function Quests() {
           ) : (
             sortedQuests.map((quest, i) => {
               const runtime = getRuntime(quest);
-              const isAccepted = Boolean(runtime.acceptedAt);
-              const isActive = isAccepted && !quest.completed;
-              const status = quest.completed ? "completed" : isActive ? "active" : "available";
+              const isActive = activeQuest?.id === quest.id && !quest.completed;
+              const status = (quest.status || (quest.completed ? "completed" : "available")) as QuestStatus;
 
               return (
                 <motion.div
@@ -516,7 +519,7 @@ export default function Quests() {
                       )}
                       {isActive && (
                         <div className="mt-3">
-                          <QuestTimer acceptedAt={runtime.acceptedAt} recommendedMinutes={runtime.recommendedMinutes} />
+                          <QuestTimer acceptedAt={activeQuest?.acceptedAt ?? runtime.acceptedAt} recommendedMinutes={activeQuest?.recommendedMinutes ?? runtime.recommendedMinutes} />
                         </div>
                       )}
                     </div>
@@ -527,7 +530,7 @@ export default function Quests() {
                       </div>
                       {quest.completed ? (
                         <span className="text-[10px] text-secondary font-display uppercase tracking-widest border border-secondary/20 px-3 py-1.5 rounded bg-secondary/5">Completed</span>
-                      ) : isAccepted ? (
+                      ) : isActive ? (
                         <button 
                           onClick={(e) => handleAttemptComplete(quest, e)}
                           className="bg-secondary/10 hover:bg-secondary/30 text-secondary border border-secondary/30 hover:border-secondary p-3 rounded-lg transition-all duration-300 hover:shadow-[0_0_15px_hsl(var(--secondary)/0.3)] flex items-center justify-center"

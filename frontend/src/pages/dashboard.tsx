@@ -233,7 +233,7 @@ export default function Dashboard() {
   const { data: profile, isLoading: profileLoading } = useGetProfile({ query: { queryKey: ["/api/users/profile"] } });
   const { data: summary, isLoading: summaryLoading } = useGetStatsSummary({ query: { queryKey: ["/api/stats/summary"] } });
   const { data: weekly, isLoading: weeklyLoading } = useGetWeeklyStats({ query: { queryKey: ["/api/stats/weekly"] } });
-  const { data: quests, isLoading: questsLoading } = useGetQuests({ completed: false }, { query: { queryKey: ["/api/quests", { completed: false }] } });
+  const { data: quests, isLoading: questsLoading } = useGetQuests({ status: "active" }, { query: { queryKey: ["/api/quests", { status: "active" }] } });
   // Handle daily login check-in
   useEffect(() => {
     const handleCheckIn = async () => {

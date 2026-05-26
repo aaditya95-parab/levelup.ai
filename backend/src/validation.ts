@@ -15,6 +15,7 @@ export const LoginUserBody = z.object({
 // Quests
 export const GetQuestsQueryParams = z.object({
   completed: z.coerce.boolean().optional(),
+  status: z.enum(["available", "active", "completed", "failed"]).optional(),
 });
 
 export const CreateQuestBody = z.object({
@@ -30,6 +31,7 @@ export const UpdateQuestParams = z.object({
 
 export const UpdateQuestBody = z.object({
   completed: z.boolean().optional(),
+  status: z.enum(["available", "active", "completed", "failed"]).optional(),
   title: z.string().optional(),
   description: z.string().optional(),
   difficulty: z.enum(["easy", "medium", "hard"]).optional(),

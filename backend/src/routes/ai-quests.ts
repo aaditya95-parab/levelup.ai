@@ -119,6 +119,7 @@ router.post("/ai/accept-quests", requireAuth, async (req: AuthenticatedRequest, 
         difficulty,
         category,
         xpReward,
+        status: "available",
         completed: false,
         completedAt: null,
       });

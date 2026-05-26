@@ -88,6 +88,7 @@ export interface Quest {
   difficulty: QuestDifficulty;
   category: QuestCategory;
   xpReward: number;
+  status: string;
   completed: boolean;
   completedAt?: string | null;
   createdAt: string;
@@ -145,6 +146,7 @@ export const UpdateQuestBodyCategory = {
 
 export interface UpdateQuestBody {
   completed?: boolean;
+  status?: string;
   title?: string;
   description?: string;
   difficulty?: UpdateQuestBodyDifficulty;
@@ -189,4 +191,5 @@ export interface LeaderboardEntry {
 
 export type GetQuestsParams = {
   completed?: boolean;
+  status?: string;
 };

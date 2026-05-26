@@ -1,0 +1,50 @@
+.active-quest-timer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  background: rgba(2, 6, 23, 0.6);
+  box-shadow: inset 0 0 14px rgba(15, 23, 42, 0.6);
+}
+
+.active-quest-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.active-quest-timer-label {
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.active-quest-timer-value {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.active-quest-timer-divider {
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.active-quest-timer-bar {
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.8);
+  overflow: hidden;
+}
+
+.active-quest-timer-progress {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.3), rgba(34, 211, 238, 0.9));
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+  transition: width 0.6s ease;
+}
