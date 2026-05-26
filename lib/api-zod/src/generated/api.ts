@@ -64,6 +64,18 @@ export const LoginUserResponse = zod.object({
       discipline: zod.number().min(loginUserResponseUserStatsDisciplineMin),
       health: zod.number().min(loginUserResponseUserStatsHealthMin),
     }),
+    crystals: zod
+      .number()
+      .optional()
+      .describe("Currency earned from login streaks and bonuses"),
+    loginStreak: zod
+      .number()
+      .optional()
+      .describe("Days of consecutive daily logins"),
+    lastLoginDate: zod.coerce
+      .date()
+      .nullish()
+      .describe("Last login date in YYYY-MM-DD format"),
     createdAt: zod.coerce.date(),
   }),
 });
@@ -93,7 +105,43 @@ export const GetProfileResponse = zod.object({
     discipline: zod.number().min(getProfileResponseStatsDisciplineMin),
     health: zod.number().min(getProfileResponseStatsHealthMin),
   }),
+  crystals: zod
+    .number()
+    .optional()
+    .describe("Currency earned from login streaks and bonuses"),
+  loginStreak: zod
+    .number()
+    .optional()
+    .describe("Days of consecutive daily logins"),
+  lastLoginDate: zod.coerce
+    .date()
+    .nullish()
+    .describe("Last login date in YYYY-MM-DD format"),
   createdAt: zod.coerce.date(),
+});
+
+/**
+ * Awards daily login bonus (10 XP + 5 crystals) if not already claimed today. Tracks login streaks.
+ * @summary Daily login check-in for rewards and streak tracking
+ */
+export const CheckInDailyResponse = zod.object({
+  alreadyClaimed: zod
+    .boolean()
+    .describe("True if daily reward already claimed today"),
+  xpAwarded: zod
+    .number()
+    .optional()
+    .describe("XP granted for daily login (only if not already claimed)"),
+  crystalsAwarded: zod
+    .number()
+    .optional()
+    .describe("Crystals granted for daily login (only if not already claimed)"),
+  loginStreak: zod.number().describe("Current login streak after check-in"),
+  totalXp: zod.number().optional().describe("User's total XP after reward"),
+  totalCrystals: zod
+    .number()
+    .optional()
+    .describe("User's total crystals after reward"),
 });
 
 /**
@@ -185,6 +233,18 @@ export const UpdateQuestResponse = zod.object({
       discipline: zod.number().min(updateQuestResponseUserStatsDisciplineMin),
       health: zod.number().min(updateQuestResponseUserStatsHealthMin),
     }),
+    crystals: zod
+      .number()
+      .optional()
+      .describe("Currency earned from login streaks and bonuses"),
+    loginStreak: zod
+      .number()
+      .optional()
+      .describe("Days of consecutive daily logins"),
+    lastLoginDate: zod.coerce
+      .date()
+      .nullish()
+      .describe("Last login date in YYYY-MM-DD format"),
     createdAt: zod.coerce.date(),
   }),
   xpGained: zod.number(),

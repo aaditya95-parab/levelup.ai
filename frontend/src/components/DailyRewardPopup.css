@@ -1,0 +1,310 @@
+.reward-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.reward-popup-modal {
+  background: linear-gradient(135deg, rgba(20, 20, 30, 0.95) 0%, rgba(30, 25, 45, 0.95) 100%);
+  border: 2px solid hsl(var(--primary) / 0.5);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 0 40px hsl(var(--primary) / 0.3), inset 0 1px 1px hsl(var(--primary) / 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .reward-popup-modal {
+    padding: 2rem;
+    gap: 1.5rem;
+  }
+}
+
+.reward-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: hsl(var(--primary));
+  font-family: var(--font-display, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-align: center;
+  text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+}
+
+@media (min-width: 640px) {
+  .reward-title {
+    font-size: 1.75rem;
+  }
+}
+
+.reward-streak-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reward-streak-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 0.75rem;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+@media (min-width: 640px) {
+  .reward-streak-display {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+}
+
+.reward-flame-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #f97316;
+  animation: flames-bounce 0.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .reward-flame-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.reward-streak-number {
+  font-size: 1.75rem;
+  font-weight: 900;
+  font-family: var(--font-display, monospace);
+  color: #fbbf24;
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .reward-streak-number {
+    font-size: 2.5rem;
+  }
+}
+
+.reward-streak-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(251, 191, 36, 0.8);
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .reward-streak-label {
+    font-size: 0.75rem;
+  }
+}
+
+.reward-milestone {
+  padding: 0.5rem 1rem;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #d8b4fe;
+  text-align: center;
+  animation: milestone-glow 1.5s ease-in-out infinite;
+}
+
+@media (min-width: 640px) {
+  .reward-milestone {
+    font-size: 0.875rem;
+  }
+}
+
+.reward-items-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .reward-items-grid {
+    gap: 1rem;
+  }
+}
+
+.reward-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid;
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .reward-item {
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+}
+
+.reward-item.xp-item {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.reward-item.crystal-item {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+.reward-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  animation: spin-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .reward-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.reward-item.xp-item .reward-icon {
+  color: #22c55e;
+}
+
+.reward-item.crystal-item .reward-icon {
+  color: #3b82f6;
+}
+
+.reward-amount {
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-family: var(--font-display, monospace);
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .reward-amount {
+    font-size: 1.75rem;
+  }
+}
+
+.reward-item.xp-item .reward-amount {
+  color: #86efac;
+}
+
+.reward-item.crystal-item .reward-amount {
+  color: #93c5fd;
+}
+
+.reward-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+@media (min-width: 640px) {
+  .reward-label {
+    font-size: 0.75rem;
+  }
+}
+
+.reward-close-btn {
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: var(--font-display, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.4);
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 640px) {
+  .reward-close-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+.reward-close-btn:hover {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.9) 0%, hsl(var(--primary) / 0.7) 100%);
+  box-shadow: 0 0 25px hsl(var(--primary) / 0.5);
+}
+
+.reward-close-btn:active {
+  transform: scale(0.95);
+}
+
+.reward-auto-close-hint {
+  font-size: 0.625rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .reward-auto-close-hint {
+    font-size: 0.75rem;
+  }
+}
+
+/* Animations */
+@keyframes flames-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.1);
+  }
+}
+
+@keyframes spin-pulse {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+}
+
+@keyframes milestone-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+  }
+}

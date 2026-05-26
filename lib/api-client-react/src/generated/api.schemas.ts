@@ -54,12 +54,33 @@ export interface UserProfile {
   xpToNextLevel: number;
   streak: number;
   stats: UserStats;
+  /** Currency earned from login streaks and bonuses */
+  crystals?: number;
+  /** Days of consecutive daily logins */
+  loginStreak?: number;
+  /** Last login date in YYYY-MM-DD format */
+  lastLoginDate?: string | null;
   createdAt: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: UserProfile;
+}
+
+export interface CheckInResponse {
+  /** True if daily reward already claimed today */
+  alreadyClaimed: boolean;
+  /** XP granted for daily login (only if not already claimed) */
+  xpAwarded?: number;
+  /** Crystals granted for daily login (only if not already claimed) */
+  crystalsAwarded?: number;
+  /** Current login streak after check-in */
+  loginStreak: number;
+  /** User's total XP after reward */
+  totalXp?: number;
+  /** User's total crystals after reward */
+  totalCrystals?: number;
 }
 
 export type QuestDifficulty =

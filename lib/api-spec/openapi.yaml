@@ -110,6 +110,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /users/check-in:
+    post:
+      operationId: checkInDaily
+      tags: [users]
+      summary: Daily login check-in for rewards and streak tracking
+      description: Awards daily login bonus (10 XP + 5 crystals) if not already claimed today. Tracks login streaks.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Check-in successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckInResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /quests:
     get:
       operationId: getQuests
@@ -363,6 +391,17 @@ components:
           type: integer
         stats:
           $ref: "#/components/schemas/UserStats"
+        crystals:
+          type: integer
+          description: Currency earned from login streaks and bonuses
+        loginStreak:
+          type: integer
+          description: Days of consecutive daily logins
+        lastLoginDate:
+          type: string
+          format: date
+          nullable: true
+          description: Last login date in YYYY-MM-DD format
         createdAt:
           type: string
           format: date-time
@@ -376,6 +415,31 @@ components:
         - streak
         - stats
         - createdAt
+
+    CheckInResponse:
+      type: object
+      properties:
+        alreadyClaimed:
+          type: boolean
+          description: True if daily reward already claimed today
+        xpAwarded:
+          type: integer
+          description: XP granted for daily login (only if not already claimed)
+        crystalsAwarded:
+          type: integer
+          description: Crystals granted for daily login (only if not already claimed)
+        loginStreak:
+          type: integer
+          description: Current login streak after check-in
+        totalXp:
+          type: integer
+          description: User's total XP after reward
+        totalCrystals:
+          type: integer
+          description: User's total crystals after reward
+      required:
+        - alreadyClaimed
+        - loginStreak
 
     Quest:
       type: object

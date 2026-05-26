@@ -21,6 +21,9 @@ function buildUserProfile(user: UserDocument) {
     xpToNextLevel: xpToNextLevel(user.level),
     streak: user.streak,
     stats: user.stats,
+    crystals: user.crystals ?? 0,
+    loginStreak: user.loginStreak ?? 0,
+    lastLoginDate: user.lastLoginDate ?? null,
     createdAt: user.createdAt,
   };
 }
@@ -54,6 +57,9 @@ router.post("/auth/register", async (req, res) => {
       streak: 0,
       longestStreak: 0,
       stats: { strength: 0, intelligence: 0, discipline: 0, health: 0 },
+      loginStreak: 0,
+      lastLoginDate: null,
+      crystals: 0,
     });
 
     const token = signToken(user.id);

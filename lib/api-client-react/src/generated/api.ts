@@ -18,6 +18,7 @@ import type {
 
 import type {
   AuthResponse,
+  CheckInResponse,
   CreateQuestBody,
   DailyStats,
   ErrorResponse,
@@ -365,6 +366,88 @@ export function useGetProfile<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Awards daily login bonus (10 XP + 5 crystals) if not already claimed today. Tracks login streaks.
+ * @summary Daily login check-in for rewards and streak tracking
+ */
+export const getCheckInDailyUrl = () => {
+  return `/api/users/check-in`;
+};
+
+export const checkInDaily = async (
+  options?: RequestInit,
+): Promise<CheckInResponse> => {
+  return customFetch<CheckInResponse>(getCheckInDailyUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCheckInDailyMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkInDaily>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof checkInDaily>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["checkInDaily"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof checkInDaily>>,
+    void
+  > = () => {
+    return checkInDaily(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CheckInDailyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof checkInDaily>>
+>;
+
+export type CheckInDailyMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Daily login check-in for rewards and streak tracking
+ */
+export const useCheckInDaily = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkInDaily>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof checkInDaily>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCheckInDailyMutationOptions(options));
+};
 
 /**
  * @summary Get all quests for current user

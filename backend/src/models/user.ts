@@ -93,6 +93,10 @@ const userSchema = new Schema(
     onboardingComplete: { type: Boolean, default: false },
     profile: { type: onboardingProfileSchema, default: null },
     createdAt: { type: Date, default: Date.now },
+    // ── Daily Login Rewards & Streak System ────────────────────────────────
+    loginStreak: { type: Number, default: 0 },
+    lastLoginDate: { type: String, default: null },  // ISO date string (YYYY-MM-DD)
+    crystals: { type: Number, default: 0 },
   },
   { versionKey: false, id: false },
 );
