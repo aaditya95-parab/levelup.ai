@@ -1,0 +1,501 @@
+Dashboard Enhanced Styles
+   Premium RPG / Cyber Fantasy Visual Upgrades
+   ═══════════════════════════════════════════════════════════════ */
+/* ─── Keyframes ─── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px hsl(var(--primary) / 0.2), 0 0 20px hsl(var(--primary) / 0.1); }
+  50% { box-shadow: 0 0 15px hsl(var(--primary) / 0.4), 0 0 40px hsl(var(--primary) / 0.2); }
+}
+@keyframes shimmer-sweep {
+  0% { left: -30%; }
+  100% { left: 130%; }
+}
+@keyframes energy-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes flame-flicker {
+  0% { transform: scale(1) rotate(-2deg); opacity: 0.9; }
+  100% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+}
+@keyframes xp-fly {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-50px) scale(1.4); opacity: 0; }
+}
+@keyframes ring-expand {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes border-breathe {
+  0%, 100% { border-color: hsl(var(--primary) / 0.2); }
+  50% { border-color: hsl(var(--primary) / 0.5); }
+}
+@keyframes stat-icon-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px currentColor); }
+  50% { filter: drop-shadow(0 0 8px currentColor); }
+}
+@keyframes number-glow {
+  0%, 100% { text-shadow: 0 0 5px currentColor; }
+  50% { text-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+}
+/* ─── Dashboard Container ─── */
+.dashboard-container {
+  position: relative;
+}
+/* ─── Ambient Background Orbs ─── */
+.dashboard-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.dashboard-ambient .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.08;
+  animation: float 20s ease-in-out infinite;
+}
+.dashboard-ambient .orb-1 {
+  width: 500px;
+  height: 500px;
+  background: hsl(var(--primary));
+  top: -150px;
+  left: -150px;
+}
+.dashboard-ambient .orb-2 {
+  width: 400px;
+  height: 400px;
+  background: hsl(280 70% 50%);
+  bottom: -100px;
+  right: -100px;
+  animation-delay: -7s;
+}
+.dashboard-ambient .orb-3 {
+  width: 300px;
+  height: 300px;
+  background: hsl(var(--secondary));
+  top: 40%;
+  left: 50%;
+  animation-delay: -14s;
+}
+/* ─── Enhanced Glass Panel ─── */
+.glass-panel-enhanced {
+  position: relative;
+  overflow: hidden;
+}
+.glass-panel-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, hsl(0 0% 100% / 0.03), transparent 50%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+/* Scan line effect */
+.glass-panel-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.2), transparent);
+  animation: scan-line 6s linear infinite;
+  pointer-events: none;
+}
+/* ─── Player Card Enhancements ─── */
+.player-card {
+  animation: border-breathe 4s ease-in-out infinite;
+}
+.player-card:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  box-shadow: 0 0 30px hsl(var(--primary) / 0.1);
+}
+/* ─── Rank Diamond ─── */
+.rank-diamond {
+  position: relative;
+  transition: all 0.3s ease;
+}
+.rank-diamond::before,
+.rank-diamond::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 1px solid hsl(var(--primary) / 0.2);
+  animation: energy-pulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+.rank-diamond::after {
+  inset: -12px;
+  animation-delay: 0.5s;
+  border-color: hsl(var(--primary) / 0.1);
+}
+.rank-diamond:hover {
+  transform: rotate(45deg) scale(1.08);
+  border-color: hsl(var(--primary) / 0.7);
+  box-shadow: 0 0 30px hsl(var(--primary) / 0.4), 0 0 60px hsl(var(--primary) / 0.15);
+}
+/* ─── XP Bar Enhanced ─── */
+.xp-bar-container {
+  position: relative;
+}
+.xp-bar-fill {
+  position: relative;
+  box-shadow: 
+    0 0 10px hsl(var(--primary) / 0.5),
+    0 0 25px hsl(var(--primary) / 0.25),
+    inset 0 1px 0 hsl(0 0% 100% / 0.2);
+}
+.xp-bar-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, hsl(0 0% 100% / 0.25), transparent);
+  border-radius: inherit;
+}
+/* Shimmer effect */
+.xp-bar-shimmer {
+  position: absolute;
+  top: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.1), transparent);
+  animation: shimmer-sweep 3s ease-in-out infinite;
+  pointer-events: none;
+}
+/* Leading edge glow */
+.xp-bar-edge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.4));
+  border-radius: inherit;
+}
+/* ─── Stat Card Enhanced ─── */
+.stat-card-enhanced {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stat-card-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(0 0% 100% / 0.05), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.stat-card-enhanced:hover::before {
+  opacity: 1;
+}
+.stat-card-enhanced::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--stat-color), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.stat-card-enhanced:hover::after {
+  opacity: 1;
+}
+.stat-card-enhanced:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: hsl(0 0% 100% / 0.1);
+}
+.stat-icon-container {
+  transition: all 0.3s ease;
+}
+.stat-card-enhanced:hover .stat-icon-container {
+  transform: scale(1.15);
+}
+.stat-icon {
+  animation: stat-icon-pulse 3s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.stat-card-enhanced:hover .stat-icon {
+  animation-play-state: running;
+}
+/* ─── Quest Card Enhanced ─── */
+.quest-card-enhanced {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.quest-card-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.03), transparent);
+  transition: left 0.5s ease;
+}
+.quest-card-enhanced:hover::before {
+  left: 100%;
+}
+.quest-card-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0), transparent);
+  transition: all 0.3s ease;
+}
+.quest-card-enhanced:hover::after {
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent);
+}
+.quest-card-enhanced:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: 0 8px 20px hsl(0 0% 0% / 0.3);
+}
+/* Difficulty glow on hover */
+.quest-card-enhanced[data-difficulty="easy"]:hover {
+  box-shadow: 0 8px 20px hsl(142 70% 45% / 0.15);
+}
+.quest-card-enhanced[data-difficulty="medium"]:hover {
+  box-shadow: 0 8px 20px hsl(25 95% 53% / 0.15);
+}
+.quest-card-enhanced[data-difficulty="hard"]:hover {
+  box-shadow: 0 8px 20px hsl(0 84% 60% / 0.15);
+}
+/* ─── Heatmap Cell Enhanced ─── */
+.heatmap-cell-enhanced {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.heatmap-cell-enhanced:hover {
+  transform: scale(1.4);
+  z-index: 10;
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.4);
+  border-color: hsl(var(--primary) / 0.6) !important;
+}
+/* Tooltip */
+.heatmap-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 50;
+}
+.heatmap-cell-enhanced:hover .heatmap-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+.heatmap-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: hsl(0 0% 5% / 0.95);
+}
+/* ─── Streak Counter Enhanced ─── */
+.streak-counter {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.streak-counter::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, hsl(25 95% 53% / 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.streak-counter:hover::before {
+  opacity: 1;
+}
+.streak-counter:hover {
+  transform: scale(1.05);
+  border-color: hsl(25 95% 53% / 0.5);
+}
+.streak-flame {
+  animation: flame-flicker 0.15s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.streak-counter:hover .streak-flame {
+  animation-play-state: running;
+}
+/* Hot streak (7+ days) */
+.streak-counter.hot .streak-flame {
+  animation-play-state: running;
+  filter: drop-shadow(0 0 6px hsl(25 95% 53% / 0.7));
+}
+/* On fire (14+ days) */
+.streak-counter.on-fire .streak-flame {
+  animation-play-state: running;
+  filter: drop-shadow(0 0 10px hsl(0 84% 60% / 0.8));
+}
+/* Ember particles */
+.ember {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: hsl(25 95% 60%);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+.streak-counter.hot .ember,
+.streak-counter.on-fire .ember {
+  animation: ember-rise 1.5s ease-out infinite;
+}
+@keyframes ember-rise {
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  100% { transform: translateY(-30px) translateX(var(--drift, 5px)) scale(0.3); opacity: 0; }
+}
+.ember:nth-child(1) { --drift: -8px; animation-delay: 0s; left: 30%; }
+.ember:nth-child(2) { --drift: 5px; animation-delay: 0.4s; left: 50%; }
+.ember:nth-child(3) { --drift: -3px; animation-delay: 0.8s; left: 70%; }
+/* ─── Overview Stat Row ─── */
+.overview-row {
+  transition: all 0.2s ease;
+}
+.overview-row:hover {
+  background: hsl(0 0% 100% / 0.02);
+  padding-left: 8px;
+  margin-left: -8px;
+}
+.overview-row .row-icon {
+  opacity: 0.4;
+  transition: all 0.2s ease;
+}
+.overview-row:hover .row-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.overview-row .row-value {
+  transition: all 0.2s ease;
+}
+.overview-row:hover .row-value {
+  animation: number-glow 1.5s ease-in-out infinite;
+}
+/* ─── Empty Quest State ─── */
+.empty-quest-icon {
+  position: relative;
+}
+.empty-quest-icon::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px dashed hsl(var(--primary) / 0.3);
+  border-radius: 50%;
+  animation: spin 20s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.empty-quest-zap {
+  animation: float 2s ease-in-out infinite;
+}
+/* ─── Generate Button Enhanced ─── */
+.generate-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.generate-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+  transition: left 0.5s ease;
+}
+.generate-btn:hover::before {
+  left: 100%;
+}
+.generate-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px hsl(var(--primary) / 0.3);
+}
+.generate-btn:active {
+  transform: scale(0.98);
+}
+/* ─── Chart Enhancements ─── */
+.chart-container .recharts-tooltip-wrapper {
+  filter: drop-shadow(0 4px 12px hsl(0 0% 0% / 0.5));
+}
+.chart-container .recharts-active-dot circle {
+  filter: drop-shadow(0 0 8px hsl(var(--primary)));
+}
+/* ─── XP Fly Animation ─── */
+.xp-fly-number {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: hsl(var(--primary));
+  text-shadow: 0 0 10px hsl(var(--primary) / 0.6);
+  pointer-events: none;
+  animation: xp-fly 1.2s ease-out forwards;
+}
+/* ─── Pulse Ring (for icons on hover) ─── */
+.pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  animation: ring-expand 1s ease-out infinite;
+  pointer-events: none;
+}
+/* ─── View All Button ─── */
+.view-all-btn {
+  transition: all 0.2s ease;
+}
+.view-all-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.2);
+}
+.view-all-btn:hover .chevron {
+  transform: translateX(3px);
+}
+.view-all-btn .chevron {
+  transition: transform 0.2s ease;
+}
+/* ─── Responsive Adjustments ─── */
+@media (max-width: 640px) {
+  .dashboard-ambient .orb {
+    filter: blur(80px);
+    opacity: 0.05;
+  }
+  
+  .stat-card-enhanced:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+  
+  .quest-card-enhanced:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+}

@@ -1,0 +1,138 @@
+.retry-quest-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  padding: 1rem;
+}
+
+.retry-quest-modal {
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  box-shadow: 0 0 30px rgba(248, 113, 113, 0.2);
+}
+
+.retry-quest-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.retry-quest-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 113, 113, 0.15);
+  color: #fb7185;
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.3);
+}
+
+.retry-quest-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f8fafc;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.retry-quest-subtitle {
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.retry-quest-body {
+  display: grid;
+  gap: 0.9rem;
+  color: rgba(226, 232, 240, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.retry-quest-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.retry-quest-label {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.retry-quest-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.retry-quest-sincerity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.retry-quest-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .retry-quest-actions {
+    flex-direction: row;
+  }
+}
+
+.retry-quest-retry,
+.retry-quest-force {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: 0.6rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.retry-quest-retry {
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  color: #a5f3fc;
+}
+
+.retry-quest-retry:hover {
+  background: rgba(34, 211, 238, 0.25);
+}
+
+.retry-quest-force {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+}
+
+.retry-quest-force:hover {
+  background: rgba(248, 113, 113, 0.2);
+}

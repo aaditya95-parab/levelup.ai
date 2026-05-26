@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGetQuests, useCreateQuest, useUpdateQuest, useDeleteQuest } from "../lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Plus, Check, X, Filter } from "lucide-react";
+import { Shield, Plus, Check, X } from "lucide-react";
 import { useLevelUp } from "@/components/level-up-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import * as Dialog from "@radix-ui/react-dialog";
+import { QuestDetailsModal } from "@/components/QuestDetailsModal";
+import { QuestTimer } from "@/components/QuestTimer";
+import { QuestAcceptButton } from "@/components/QuestAcceptButton";
+import { RetryQuestPopup } from "@/components/RetryQuestPopup";
+import { QuestStatusBadge } from "@/components/QuestStatusBadge";
 
 const questSchema = z.object({
   title: z.string().min(1).max(200),
@@ -16,9 +21,163 @@ const questSchema = z.object({
   category: z.enum(["strength", "intelligence", "discipline", "health"]),
 });
 
+type Quest = {
+  id: number;
+  title: string;
+  description?: string | null;
+  difficulty: "easy" | "medium" | "hard";
+  category: "strength" | "intelligence" | "discipline" | "health";
+  xpReward: number;
+  completed: boolean;
+};
+
+type QuestRuntime = {
+  acceptedAt: string | null;
+  recommendedMinutes: number;
+  forceCompleteCount: number;
+  sincerityScore: number;
+};
+
+type QuestBriefing = {
+  description: string;
+  steps: string[];
+  tips: string[];
+  recommendedMinutes: number;
+  minMinutes: number;
+};
+
+type RetryPrompt = {
+  quest: Quest;
+  elapsedMinutes: number;
+  minMinutes: number;
+  recommendedMinutes: number;
+  clickPoint: { x: number; y: number };
+};
+
+const QUEST_RUNTIME_KEY = "quest-runtime-v1";
+
+const difficultyOrder = {
+  easy: 1,
+  medium: 2,
+  hard: 3,
+} as const;
+
+const recommendedMinutesByDifficulty = {
+  easy: 15,
+  medium: 30,
+  hard: 60,
+} as const;
+
+const minCompletionRatioByDifficulty = {
+  easy: 0.4,
+  medium: 0.5,
+  hard: 0.6,
+} as const;
+
+const categoryBriefing = {
+  strength: {
+    steps: [
+      "Warm up 3-5 minutes to prepare your body.",
+      "Complete the main set with strict form.",
+      "Record reps, sets, or distance.",
+      "Cool down and stretch the target muscles.",
+    ],
+    tips: [
+      "Focus on controlled tempo and breath.",
+      "Track small performance gains.",
+      "Stop if form breaks down.",
+    ],
+  },
+  intelligence: {
+    steps: [
+      "Define the objective and clear distractions.",
+      "Work in 2-3 focused study blocks.",
+      "Summarize key insights in your own words.",
+      "Log the result and next action.",
+    ],
+    tips: [
+      "Use a timer and single-task focus.",
+      "Capture notes immediately after each block.",
+      "End with a quick review.",
+    ],
+  },
+  discipline: {
+    steps: [
+      "Set a clear start and end time.",
+      "Execute the task without task-switching.",
+      "Mark completion in your tracker.",
+      "Review what slowed you down.",
+    ],
+    tips: [
+      "Reduce friction before starting.",
+      "Keep your environment minimal.",
+      "Commit to the first 5 minutes.",
+    ],
+  },
+  health: {
+    steps: [
+      "Prepare a calm, clear space.",
+      "Follow the routine mindfully and safely.",
+      "Hydrate and note how you feel afterward.",
+      "Log completion and any symptoms.",
+    ],
+    tips: [
+      "Prioritize form and consistency.",
+      "Use steady breathing as a pacing tool.",
+      "Avoid rushing the final minutes.",
+    ],
+  },
+} as const;
+
+function getRecommendedMinutes(difficulty: Quest["difficulty"]): number {
+  return recommendedMinutesByDifficulty[difficulty];
+}
+
+function getMinimumMinutes(difficulty: Quest["difficulty"], recommendedMinutes: number): number {
+  const ratio = minCompletionRatioByDifficulty[difficulty];
+  return Math.max(3, Math.ceil(recommendedMinutes * ratio));
+}
+
+function getElapsedMinutes(acceptedAt: string): number {
+  const elapsedMs = Date.now() - new Date(acceptedAt).getTime();
+  return Math.max(0, Math.floor(elapsedMs / 60000));
+}
+
+function loadQuestRuntime(): Record<string, QuestRuntime> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(QUEST_RUNTIME_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, QuestRuntime>;
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function getQuestBriefing(quest: Quest): QuestBriefing {
+  const briefing = categoryBriefing[quest.category];
+  const description = quest.description?.trim()
+    ? quest.description
+    : "Complete the objective with focus, accuracy, and full intent.";
+  const recommendedMinutes = getRecommendedMinutes(quest.difficulty);
+  const minMinutes = getMinimumMinutes(quest.difficulty, recommendedMinutes);
+  return {
+    description,
+    steps: Array.from(briefing.steps),
+    tips: Array.from(briefing.tips),
+    recommendedMinutes,
+    minMinutes,
+  };
+}
+
 export default function Quests() {
   const [filter, setFilter] = useState<"all" | "active" | "completed">("active");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
+  const [retryPrompt, setRetryPrompt] = useState<RetryPrompt | null>(null);
+  const [questRuntime, setQuestRuntime] = useState<Record<string, QuestRuntime>>(() => loadQuestRuntime());
   
   const queryClient = useQueryClient();
   const { triggerLevelUp, triggerXPGain } = useLevelUp();
@@ -49,14 +208,103 @@ export default function Quests() {
     });
   };
 
-  const handleComplete = (questId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateQuest.mutate({ questId, data: { completed: true } }, {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(QUEST_RUNTIME_KEY, JSON.stringify(questRuntime));
+  }, [questRuntime]);
+
+  useEffect(() => {
+    if (!quests) return;
+    const questIds = new Set(quests.map((quest) => String(quest.id)));
+    setQuestRuntime((prev) => {
+      let changed = false;
+      const next: Record<string, QuestRuntime> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        if (questIds.has(key)) {
+          next[key] = value;
+          return;
+        }
+        changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [quests]);
+
+  const sortedQuests = useMemo(() => {
+    if (!quests) return [];
+    return [...quests].sort((a, b) => {
+      const diff = difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
+      if (diff !== 0) return diff;
+      return a.id - b.id;
+    });
+  }, [quests]);
+
+  const selectedQuest = selectedQuestId
+    ? sortedQuests.find((quest) => quest.id === selectedQuestId) ?? null
+    : null;
+  const selectedBriefing = selectedQuest ? getQuestBriefing(selectedQuest) : null;
+  const selectedRuntime = selectedQuest ? questRuntime[String(selectedQuest.id)] : null;
+  const selectedStatus = selectedQuest
+    ? selectedQuest.completed
+      ? "completed"
+      : selectedRuntime?.acceptedAt
+        ? "active"
+        : "available"
+    : "available";
+
+  const getRuntime = (quest: Quest): QuestRuntime => {
+    const key = String(quest.id);
+    const existing = questRuntime[key];
+    if (!existing) {
+      return {
+        acceptedAt: null,
+        recommendedMinutes: getRecommendedMinutes(quest.difficulty),
+        forceCompleteCount: 0,
+        sincerityScore: 100,
+      };
+    }
+    return {
+      ...existing,
+      recommendedMinutes: existing.recommendedMinutes || getRecommendedMinutes(quest.difficulty),
+    };
+  };
+
+  const retryRuntime = retryPrompt ? getRuntime(retryPrompt.quest) : null;
+
+  const updateRuntime = (quest: Quest, updater: (prev: QuestRuntime) => QuestRuntime) => {
+    const key = String(quest.id);
+    setQuestRuntime((prev) => {
+      const current = prev[key] ?? {
+        acceptedAt: null,
+        recommendedMinutes: getRecommendedMinutes(quest.difficulty),
+        forceCompleteCount: 0,
+        sincerityScore: 100,
+      };
+      return { ...prev, [key]: updater(current) };
+    });
+  };
+
+  const handleAcceptQuest = (quest: Quest, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    updateRuntime(quest, (current) => ({
+      ...current,
+      acceptedAt: new Date().toISOString(),
+      recommendedMinutes: current.recommendedMinutes || getRecommendedMinutes(quest.difficulty),
+    }));
+  };
+
+  const completeQuest = (quest: Quest, clickPoint: { x: number; y: number }) => {
+    updateQuest.mutate({ questId: quest.id, data: { completed: true } }, {
       onSuccess: (res) => {
-        triggerXPGain(res.xpGained, e);
+        const xpEvent = { clientX: clickPoint.x, clientY: clickPoint.y } as React.MouseEvent;
+        triggerXPGain(res.xpGained, xpEvent);
         if (res.leveledUp && res.newLevel) {
           triggerLevelUp(res.newLevel);
         }
+        updateRuntime(quest, (current) => ({
+          ...current,
+          acceptedAt: null,
+        }));
         queryClient.invalidateQueries({ queryKey: ["/api/quests"] });
         queryClient.invalidateQueries({ queryKey: ["/api/users/profile"] });
         queryClient.invalidateQueries({ queryKey: ["/api/stats/summary"] });
@@ -65,9 +313,57 @@ export default function Quests() {
     });
   };
 
-  const handleDelete = (questId: number) => {
+  const handleAttemptComplete = (quest: Quest, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const runtime = getRuntime(quest);
+    if (!runtime.acceptedAt) {
+      setSelectedQuestId(quest.id);
+      return;
+    }
+    const elapsedMinutes = getElapsedMinutes(runtime.acceptedAt);
+    const minMinutes = getMinimumMinutes(quest.difficulty, runtime.recommendedMinutes);
+    if (elapsedMinutes < minMinutes) {
+      setRetryPrompt({
+        quest,
+        elapsedMinutes,
+        minMinutes,
+        recommendedMinutes: runtime.recommendedMinutes,
+        clickPoint: { x: e.clientX, y: e.clientY },
+      });
+      return;
+    }
+    completeQuest(quest, { x: e.clientX, y: e.clientY });
+  };
+
+  const handleRetryQuest = () => {
+    if (!retryPrompt) return;
+    updateRuntime(retryPrompt.quest, (current) => ({
+      ...current,
+      acceptedAt: new Date().toISOString(),
+    }));
+    setRetryPrompt(null);
+  };
+
+  const handleForceComplete = () => {
+    if (!retryPrompt) return;
+    updateRuntime(retryPrompt.quest, (current) => ({
+      ...current,
+      forceCompleteCount: current.forceCompleteCount + 1,
+      sincerityScore: Math.max(0, current.sincerityScore - 5),
+    }));
+    completeQuest(retryPrompt.quest, retryPrompt.clickPoint);
+    setRetryPrompt(null);
+  };
+
+  const handleDelete = (questId: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     deleteQuest.mutate({ questId }, {
       onSuccess: () => {
+        setQuestRuntime((prev) => {
+          const next = { ...prev };
+          delete next[String(questId)];
+          return next;
+        });
         queryClient.invalidateQueries({ queryKey: ["/api/quests"] });
         queryClient.invalidateQueries({ queryKey: ["/api/stats/summary"] });
       }
@@ -76,6 +372,31 @@ export default function Quests() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+      <QuestDetailsModal
+        isOpen={selectedQuestId !== null}
+        quest={selectedQuest}
+        details={selectedBriefing}
+        status={selectedStatus}
+        acceptedAt={selectedRuntime?.acceptedAt ?? null}
+        recommendedMinutes={selectedRuntime?.recommendedMinutes ?? selectedBriefing?.recommendedMinutes ?? 0}
+        sincerityScore={selectedRuntime?.sincerityScore ?? 100}
+        forceCompleteCount={selectedRuntime?.forceCompleteCount ?? 0}
+        onAccept={() => selectedQuest && handleAcceptQuest(selectedQuest)}
+        onClose={() => setSelectedQuestId(null)}
+      />
+      <RetryQuestPopup
+        isOpen={Boolean(retryPrompt)}
+        questTitle={retryPrompt?.quest.title ?? ""}
+        elapsedMinutes={retryPrompt?.elapsedMinutes ?? 0}
+        minMinutes={retryPrompt?.minMinutes ?? 0}
+        recommendedMinutes={retryPrompt?.recommendedMinutes ?? 0}
+        forceCompleteCount={retryRuntime?.forceCompleteCount ?? 0}
+        sincerityScore={retryRuntime?.sincerityScore ?? 100}
+        onRetry={handleRetryQuest}
+        onForceComplete={handleForceComplete}
+        onClose={() => setRetryPrompt(null)}
+      />
+
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-display font-bold text-white uppercase tracking-widest">Quest Log</h1>
@@ -152,68 +473,89 @@ export default function Quests() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="py-12 text-center text-primary font-display uppercase tracking-widest animate-pulse">
               Scanning Data...
             </motion.div>
-          ) : quests?.length === 0 ? (
+          ) : sortedQuests.length === 0 ? (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="py-16 text-center text-muted-foreground glass-panel border border-border rounded-xl">
               <Shield className="w-16 h-16 mx-auto mb-4 opacity-20" />
               <p className="font-display uppercase tracking-widest font-bold">No objectives found</p>
               <p className="text-sm mt-2 opacity-50 font-sans">Time to rest, or assign new objectives.</p>
             </motion.div>
           ) : (
-            quests?.map((quest, i) => (
-              <motion.div
-                layout
-                key={quest.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                transition={{ delay: Math.min(i * 0.05, 0.3) }}
-                className={`glass-panel p-5 md:p-6 rounded-xl border relative overflow-hidden group transition-all duration-300 ${quest.completed ? 'border-secondary/20 bg-black/60' : 'border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)] hover:bg-white/[0.02]'}`}
-              >
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 relative z-10">
-                  <div className="flex-1 pr-8">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className={`text-[10px] font-bold font-display uppercase tracking-widest px-2 py-1 rounded border ${
-                        quest.difficulty === 'hard' ? 'bg-destructive/10 text-destructive border-destructive/30' : 
-                        quest.difficulty === 'medium' ? 'bg-orange-500/10 text-orange-500 border-orange-500/30' : 
-                        'bg-green-500/10 text-green-500 border-green-500/30'
-                      }`}>
-                        {quest.difficulty}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-display uppercase tracking-widest border border-border px-2 py-1 rounded">{quest.category}</span>
-                    </div>
-                    <h3 className={`text-xl font-bold font-sans tracking-wide ${quest.completed ? 'text-muted-foreground line-through opacity-70' : 'text-white'}`}>{quest.title}</h3>
-                    {quest.description && (
-                      <p className={`mt-2 text-sm leading-relaxed ${quest.completed ? 'text-muted-foreground/40' : 'text-muted-foreground/80'}`}>{quest.description}</p>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center md:flex-col justify-between md:items-end gap-4 shrink-0 border-t md:border-t-0 border-border pt-4 md:pt-0">
-                    <div className={`font-display font-bold uppercase tracking-widest text-lg ${quest.completed ? 'text-secondary/50' : 'text-secondary drop-shadow-[0_0_8px_hsl(var(--secondary)/0.5)]'}`}>
-                      +{quest.xpReward} XP
-                    </div>
-                    {!quest.completed ? (
-                      <button 
-                        onClick={(e) => handleComplete(quest.id, e)}
-                        className="bg-secondary/10 hover:bg-secondary/30 text-secondary border border-secondary/30 hover:border-secondary p-3 rounded-lg transition-all duration-300 hover:shadow-[0_0_15px_hsl(var(--secondary)/0.3)] flex items-center justify-center"
-                        title="Complete Quest"
-                      >
-                        <Check className="w-6 h-6" />
-                      </button>
-                    ) : (
-                      <span className="text-[10px] text-secondary font-display uppercase tracking-widest border border-secondary/20 px-3 py-1.5 rounded bg-secondary/5">Completed</span>
-                    )}
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => handleDelete(quest.id)}
-                  className={`absolute top-4 right-4 p-2 text-muted-foreground/50 hover:text-destructive transition-colors z-20 rounded-md hover:bg-destructive/10 ${quest.completed ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100 opacity-100'}`}
-                  title="Abandon Quest"
+            sortedQuests.map((quest, i) => {
+              const runtime = getRuntime(quest);
+              const isAccepted = Boolean(runtime.acceptedAt);
+              const isActive = isAccepted && !quest.completed;
+              const status = quest.completed ? "completed" : isActive ? "active" : "available";
+
+              return (
+                <motion.div
+                  layout
+                  key={quest.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                  transition={{ delay: Math.min(i * 0.05, 0.3) }}
+                  onClick={() => setSelectedQuestId(quest.id)}
+                  className={`glass-panel p-5 md:p-6 rounded-xl border relative overflow-hidden group transition-all duration-300 cursor-pointer ${quest.completed ? "border-secondary/20 bg-black/60" : "border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)] hover:bg-white/[0.02]"} ${isActive ? "ring-1 ring-amber-400/30 shadow-[0_0_30px_rgba(251,191,36,0.18)]" : ""}`}
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </motion.div>
-            ))
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 relative z-10">
+                    <div className="flex-1 pr-8">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <QuestStatusBadge status={status} />
+                        <span className={`text-[10px] font-bold font-display uppercase tracking-widest px-2 py-1 rounded border ${
+                          quest.difficulty === "hard" ? "bg-destructive/10 text-destructive border-destructive/30" :
+                          quest.difficulty === "medium" ? "bg-orange-500/10 text-orange-500 border-orange-500/30" :
+                          "bg-green-500/10 text-green-500 border-green-500/30"
+                        }`}>
+                          {quest.difficulty}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-display uppercase tracking-widest border border-border px-2 py-1 rounded">{quest.category}</span>
+                      </div>
+                      <h3 className={`text-xl font-bold font-sans tracking-wide ${quest.completed ? "text-muted-foreground line-through opacity-70" : "text-white"}`}>{quest.title}</h3>
+                      {quest.description && (
+                        <p className={`mt-2 text-sm leading-relaxed ${quest.completed ? "text-muted-foreground/40" : "text-muted-foreground/80"}`}>{quest.description}</p>
+                      )}
+                      {isActive && (
+                        <div className="mt-3">
+                          <QuestTimer acceptedAt={runtime.acceptedAt} recommendedMinutes={runtime.recommendedMinutes} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center md:flex-col justify-between md:items-end gap-4 shrink-0 border-t md:border-t-0 border-border pt-4 md:pt-0">
+                      <div className={`font-display font-bold uppercase tracking-widest text-lg ${quest.completed ? "text-secondary/50" : "text-secondary drop-shadow-[0_0_8px_hsl(var(--secondary)/0.5)]"}`}>
+                        +{quest.xpReward} XP
+                      </div>
+                      {quest.completed ? (
+                        <span className="text-[10px] text-secondary font-display uppercase tracking-widest border border-secondary/20 px-3 py-1.5 rounded bg-secondary/5">Completed</span>
+                      ) : isAccepted ? (
+                        <button 
+                          onClick={(e) => handleAttemptComplete(quest, e)}
+                          className="bg-secondary/10 hover:bg-secondary/30 text-secondary border border-secondary/30 hover:border-secondary p-3 rounded-lg transition-all duration-300 hover:shadow-[0_0_15px_hsl(var(--secondary)/0.3)] flex items-center justify-center"
+                          title="Complete Quest"
+                        >
+                          <Check className="w-6 h-6" />
+                        </button>
+                      ) : (
+                        <QuestAcceptButton
+                          accepted={false}
+                          completed={false}
+                          size="sm"
+                          onAccept={(e: React.MouseEvent<HTMLButtonElement>) => handleAcceptQuest(quest, e)}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={(e) => handleDelete(quest.id, e)}
+                    className={`absolute top-4 right-4 p-2 text-muted-foreground/50 hover:text-destructive transition-colors z-20 rounded-md hover:bg-destructive/10 ${quest.completed ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100 opacity-100"}`}
+                    title="Abandon Quest"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </motion.div>
+              );
+            })
           )}
         </AnimatePresence>
       </div>

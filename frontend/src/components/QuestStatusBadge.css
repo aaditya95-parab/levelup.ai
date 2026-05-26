@@ -1,0 +1,52 @@
+.quest-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.quest-status-available {
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.quest-status-active {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(251, 191, 36, 0.12);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+  animation: quest-status-pulse 1.6s ease-in-out infinite;
+}
+
+.quest-status-completed {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.quest-status-suspicious {
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.5);
+  background: rgba(251, 113, 133, 0.12);
+  box-shadow: 0 0 12px rgba(251, 113, 133, 0.25);
+}
+
+@keyframes quest-status-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
