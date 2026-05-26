@@ -125,10 +125,10 @@ export default function Quests() {
   useEffect(() => {
     if (!quests) return;
     
-    // Only clear active quest if we see it in the list and it is no longer active or is completed
+    // Only clear active quest if we see it in the list and it is completed
     if (activeQuest) {
       const match = quests.find((quest) => quest.id === activeQuest.id);
-      if (match && (match.completed || match.status !== "active")) {
+      if (match && match.completed) {
         clearActiveQuest();
       }
     }
@@ -247,6 +247,12 @@ export default function Quests() {
   const handleAcceptQuest = (quest: Quest, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
+    const hasActiveQuest = quests?.some((q) => (q.status || (q.completed ? "completed" : "available")) === "active");
+    if (hasActiveQuest && quest.status !== "active") {
+      window.alert("You already have an active mission.");
+      return;
+    }
+
     updateQuest.mutate({ questId: quest.id, data: { status: "active" } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/quests"] });
@@ -314,21 +320,33 @@ export default function Quests() {
   const handleAttemptComplete = (quest: Quest, e: React.MouseEvent) => {
     e.stopPropagation();
     const runtime = getRuntime(quest);
-    const isActive = activeQuest?.id === quest.id;
-    const acceptedAt = isActive ? activeQuest?.acceptedAt : runtime.acceptedAt;
-    if (!isActive || !acceptedAt) {
-      setSelectedQuestId(quest.id);
+    const isGlobalActive = activeQuest?.id === quest.id;
+    const startedAt = isGlobalActive ? activeQuest?.acceptedAt : runtime.acceptedAt;
+    
+    if (!startedAt) {
+      // If we somehow lost the timestamp, just complete it
+      completeQuest(quest, { x: e.clientX, y: e.clientY });
       return;
     }
-    const elapsedMinutes = getElapsedMinutes(acceptedAt);
-    const recommendedMinutes = activeQuest?.recommendedMinutes ?? runtime.recommendedMinutes;
-    const minMinutes = getMinimumMinutes(quest.difficulty, recommendedMinutes);
-    if (elapsedMinutes < minMinutes) {
+    const actualMinutes = getElapsedMinutes(startedAt);
+    const estimatedDuration = isGlobalActive ? activeQuest?.recommendedMinutes ?? 0 : runtime.recommendedMinutes ?? 0;
+    const threshold = getMinimumMinutes(quest.difficulty, estimatedDuration);
+    const shouldBlockCompletion = actualMinutes < threshold;
+
+    console.log({
+      startedAt,
+      estimatedDuration,
+      actualMinutes,
+      threshold,
+      shouldBlockCompletion
+    });
+
+    if (shouldBlockCompletion) {
       setRetryPrompt({
         quest,
-        elapsedMinutes,
-        minMinutes,
-        recommendedMinutes,
+        elapsedMinutes: actualMinutes,
+        minMinutes: threshold,
+        recommendedMinutes: estimatedDuration,
         clickPoint: { x: e.clientX, y: e.clientY },
       });
       return;
@@ -336,23 +354,13 @@ export default function Quests() {
     completeQuest(quest, { x: e.clientX, y: e.clientY });
   };
 
-  const handleRetryQuest = () => {
-    if (!retryPrompt) return;
-    updateRuntime(retryPrompt.quest, (current) => ({
-      ...current,
-      acceptedAt: new Date().toISOString(),
-    }));
+  const handleContinueQuest = () => {
     setRetryPrompt(null);
   };
 
-  const handleForceComplete = () => {
+  const handleAbandonQuest = () => {
     if (!retryPrompt) return;
-    updateRuntime(retryPrompt.quest, (current) => ({
-      ...current,
-      forceCompleteCount: current.forceCompleteCount + 1,
-      sincerityScore: Math.max(0, current.sincerityScore - 5),
-    }));
-    completeQuest(retryPrompt.quest, retryPrompt.clickPoint);
+    handleDelete(retryPrompt.quest.id);
     setRetryPrompt(null);
   };
 
@@ -394,10 +402,8 @@ export default function Quests() {
         elapsedMinutes={retryPrompt?.elapsedMinutes ?? 0}
         minMinutes={retryPrompt?.minMinutes ?? 0}
         recommendedMinutes={retryPrompt?.recommendedMinutes ?? 0}
-        forceCompleteCount={retryRuntime?.forceCompleteCount ?? 0}
-        sincerityScore={retryRuntime?.sincerityScore ?? 100}
-        onRetry={handleRetryQuest}
-        onForceComplete={handleForceComplete}
+        onContinue={handleContinueQuest}
+        onAbandon={handleAbandonQuest}
         onClose={() => setRetryPrompt(null)}
       />
 
@@ -486,8 +492,9 @@ export default function Quests() {
           ) : (
             sortedQuests.map((quest, i) => {
               const runtime = getRuntime(quest);
-              const isActive = activeQuest?.id === quest.id && !quest.completed;
               const status = (quest.status || (quest.completed ? "completed" : "available")) as QuestStatus;
+              const isCardActive = status === "active";
+              const isGlobalActive = activeQuest?.id === quest.id;
 
               return (
                 <motion.div
@@ -498,7 +505,7 @@ export default function Quests() {
                   exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                   transition={{ delay: Math.min(i * 0.05, 0.3) }}
                   onClick={() => setSelectedQuestId(quest.id)}
-                  className={`glass-panel p-5 md:p-6 rounded-xl border relative overflow-hidden group transition-all duration-300 cursor-pointer ${quest.completed ? "border-secondary/20 bg-black/60" : "border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)] hover:bg-white/[0.02]"} ${isActive ? "ring-1 ring-amber-400/30 shadow-[0_0_30px_rgba(251,191,36,0.18)]" : ""}`}
+                  className={`glass-panel p-5 md:p-6 rounded-xl border relative overflow-hidden group transition-all duration-300 cursor-pointer ${status === "completed" ? "border-secondary/20 bg-black/60" : "border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_hsl(var(--primary)/0.1)] hover:bg-white/[0.02]"} ${isCardActive ? "ring-1 ring-amber-400/30 shadow-[0_0_30px_rgba(251,191,36,0.18)]" : ""}`}
                 >
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 relative z-10">
                     <div className="flex-1 pr-8">
@@ -517,9 +524,9 @@ export default function Quests() {
                       {quest.description && (
                         <p className={`mt-2 text-sm leading-relaxed ${quest.completed ? "text-muted-foreground/40" : "text-muted-foreground/80"}`}>{quest.description}</p>
                       )}
-                      {isActive && (
+                      {isCardActive && (
                         <div className="mt-3">
-                          <QuestTimer acceptedAt={activeQuest?.acceptedAt ?? runtime.acceptedAt} recommendedMinutes={activeQuest?.recommendedMinutes ?? runtime.recommendedMinutes} />
+                          <QuestTimer acceptedAt={(isGlobalActive ? activeQuest?.acceptedAt : runtime.acceptedAt) ?? new Date().toISOString()} recommendedMinutes={isGlobalActive ? activeQuest?.recommendedMinutes ?? 0 : runtime.recommendedMinutes ?? 0} />
                         </div>
                       )}
                     </div>
@@ -528,9 +535,9 @@ export default function Quests() {
                       <div className={`font-display font-bold uppercase tracking-widest text-lg ${quest.completed ? "text-secondary/50" : "text-secondary drop-shadow-[0_0_8px_hsl(var(--secondary)/0.5)]"}`}>
                         +{quest.xpReward} XP
                       </div>
-                      {quest.completed ? (
+                      {status === "completed" ? (
                         <span className="text-[10px] text-secondary font-display uppercase tracking-widest border border-secondary/20 px-3 py-1.5 rounded bg-secondary/5">Completed</span>
-                      ) : isActive ? (
+                      ) : status === "active" ? (
                         <button 
                           onClick={(e) => handleAttemptComplete(quest, e)}
                           className="bg-secondary/10 hover:bg-secondary/30 text-secondary border border-secondary/30 hover:border-secondary p-3 rounded-lg transition-all duration-300 hover:shadow-[0_0_15px_hsl(var(--secondary)/0.3)] flex items-center justify-center"

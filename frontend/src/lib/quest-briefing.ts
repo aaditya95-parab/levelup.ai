@@ -16,9 +16,9 @@ const recommendedMinutesByDifficulty: Record<QuestDifficulty, number> = {
 };
 
 const minCompletionRatioByDifficulty: Record<QuestDifficulty, number> = {
-  easy: 0.4,
-  medium: 0.5,
-  hard: 0.6,
+  easy: 0.3,
+  medium: 0.3,
+  hard: 0.3,
 };
 
 const categoryBriefing: Record<QuestCategory, { steps: string[]; tips: string[] }> = {
